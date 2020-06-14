@@ -28,27 +28,29 @@ class Loader:
             MessageScene: self._message_handlers,
             QueryScene: self._query_handlers
         }
-        self._default_attr = self.get_module_dir(BaseScene)
+        self._default_attr = self.get_class_attr(BaseScene)
         self.class_distribution()
 
     def class_distribution(self) -> None:
-        user_classes = self.getting_all_classes()
+        user_classes = self._loading_classes()
         for user_class in user_classes:
             user_class = user_class(self._dispatcher, self._storage)
-            user_methods = self.get_user_dir(user_class)
-            for scenes_type in self._scenes_types.keys():
-                if not isinstance(user_class, scenes_type):
-                    continue
-                handler_dictionary = self._scenes_types.get(scenes_type)
-                for user_method in user_methods:
-                    user_attr = getattr(user_class, user_method)
-                    if not ismethod(user_attr):
-                        continue
-                    handler_dictionary[user_method] = user_attr
-                break
+            self._recording_scenes_from_types(user_class)
 
-    def getting_all_classes(self) -> set:
-        # todo: сделать рекурсивное считывание файлов из всех папок
+    def _recording_scenes_from_types(self, user_class):
+        user_methods = self.get_user_attr(user_class)
+        for scenes_type in self._scenes_types.keys():
+            if not isinstance(user_class, scenes_type):
+                continue
+            handler_dictionary = self._scenes_types.get(scenes_type)
+            for user_method in user_methods:
+                user_attr = getattr(user_class, user_method)
+                if not ismethod(user_attr):
+                    continue
+                handler_dictionary[user_method] = user_attr
+            break
+
+    def _loading_classes(self) -> set:
         classes = set()
         files_path = self.recursive_load_files(self._path_to_scenes)
         for file_path in files_path:
@@ -58,6 +60,7 @@ class Loader:
 
     @staticmethod
     def recursive_load_files(path: str) -> set:
+        # todo: вынести в другой класс
         result = set()
 
         for walk in os.walk(path):
@@ -68,8 +71,9 @@ class Loader:
         return result
 
     def get_classes(self, module) -> set:
+        # todo: вынести в другой класс
         user_classes = set()
-        module_dirs = self.get_module_dir(module)
+        module_dirs = self.get_class_attr(module)
         for module_dir in module_dirs:
             user_class = getattr(module, module_dir)
             try:
@@ -81,6 +85,7 @@ class Loader:
 
     @staticmethod
     def load_module(file_path: str):
+        # todo: вынести в другой класс
         file_name = file_path.split('\\')[-1:][0]
         spec = importlib.util.spec_from_file_location(file_name, os.path.abspath(file_path))
         module = importlib.util.module_from_spec(spec)
@@ -88,11 +93,13 @@ class Loader:
         return module
 
     @staticmethod
-    def get_module_dir(user_object) -> Set[str]:
-        return {dir_ for dir_ in dir(user_object) if not dir_.endswith('__')}
+    def get_class_attr(class_) -> Set[str]:
+        # todo: вынести в другой класс
+        return {dir_ for dir_ in dir(class_) if not dir_.endswith('__')}
 
-    def get_user_dir(self, user_class) -> Set[str]:
-        all_dir = self.get_module_dir(user_class)
+    def get_user_attr(self, user_class) -> Set[str]:
+        # todo: вынести в другой класс
+        all_dir = self.get_class_attr(user_class)
         return all_dir - self._default_attr
 
     def get_message_scene_callback(self, scene_name: str) -> Callable:

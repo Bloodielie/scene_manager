@@ -1,6 +1,9 @@
+from typing import Optional, Union
+
 from aiogram import Dispatcher
 from scene_manager.storages.base import BaseStorage
 from aiogram.types.base import TelegramObject
+from aiogram.types.message import ContentType
 
 
 class BaseScene:
@@ -14,7 +17,9 @@ class BaseScene:
 
 
 class MessageScene(BaseScene):
-    pass
+    # todo: внедрить наработки из test.py
+    class Config:
+        content_types: Optional[Union[ContentType, str]] = None
 
 
 class QueryScene(BaseScene):

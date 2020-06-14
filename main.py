@@ -19,6 +19,7 @@ async def send_welcome(message: types.Message):
     """
     This handler will be called when user sends `/start` or `/help` command
     """
+    print(message.content_type)
     await message.reply("Hi!\nI'm EchoBot!\nPowered by aiogram.")
 
 
