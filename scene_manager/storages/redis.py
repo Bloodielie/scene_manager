@@ -42,27 +42,27 @@ class RedisStorage(BaseStorage):
         self._connection_lock = asyncio.Lock(loop=self._loop)
 
     async def get(self, key: str, default: typing.Optional[typing.Any] = None) -> typing.Union[None, typing.Any]:
-        redis = await self.redis()
+        conn = await self.redis()
 
-        key_ = await redis.get(key)
+        key_ = await conn.get(key)
         if key_:
             return self._loader(key_)
         return default
 
     async def put(self, key: str, value: typing.Any) -> None:
-        redis = await self.redis()
-        await redis.set(key, self._dumper(value))
+        conn = await self.redis()
+        await conn.set(key, self._dumper(value))
 
     async def delete(self, key: str) -> typing.Optional[typing.NoReturn]:
         if not await self.contains(key):
             raise KeyError("Storage doesn't contain this key.")
 
-        redis = await self.redis()
-        await redis.delete(key)
+        conn = await self.redis()
+        await conn.delete(key)
 
     async def contains(self, key: str) -> bool:
-        redis = await self.redis()
-        return await redis.exists(key)
+        conn = await self.redis()
+        return await conn.exists(key)
 
     async def redis(self) -> "aioredis.Redis":
         async with self._connection_lock:
@@ -85,7 +85,7 @@ class RedisStorage(BaseStorage):
                 self._redis.close()
 
     async def wait_closed(self) -> bool:
-        if not self._redis:
-            return True
         async with self._connection_lock:
-            return await self._redis.wait_closed()
+            if self._redis:
+                return await self._redis.wait_closed()
+            return True

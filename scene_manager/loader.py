@@ -1,4 +1,5 @@
 import os
+import glob
 import importlib.util
 from inspect import ismodule, ismethod
 
@@ -47,12 +48,24 @@ class Loader:
                 break
 
     def getting_all_classes(self) -> set:
+        # todo: сделать рекурсивное считывание файлов из всех папок
         classes = set()
-        files = [x.replace(".py", "") for x in os.listdir(self._path_to_scenes) if x not in ["__pycache__", "__init__.py"]]
-        for file in files:
-            module = self.load_module(file)
+        files_path = self.recursive_load_files(self._path_to_scenes)
+        for file_path in files_path:
+            module = self.load_module(file_path)
             classes.update(self.get_classes(module))
         return classes
+
+    @staticmethod
+    def recursive_load_files(path: str) -> set:
+        result = set()
+
+        for walk in os.walk(path):
+            for file_name in glob.glob(os.path.join(walk[0], '*.py')):
+                if file_name.endswith('__init__.py'):
+                    continue
+                result.add(file_name)
+        return result
 
     def get_classes(self, module) -> set:
         user_classes = set()
@@ -67,18 +80,20 @@ class Loader:
         return user_classes
 
     @staticmethod
+    def load_module(file_path: str):
+        file_name = file_path.split('\\')[-1:][0]
+        spec = importlib.util.spec_from_file_location(file_name, os.path.abspath(file_path))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    @staticmethod
     def get_module_dir(user_object) -> Set[str]:
         return {dir_ for dir_ in dir(user_object) if not dir_.endswith('__')}
 
     def get_user_dir(self, user_class) -> Set[str]:
         all_dir = self.get_module_dir(user_class)
         return all_dir - self._default_attr
-
-    def load_module(self, file_name: str):
-        spec = importlib.util.spec_from_file_location(file_name, os.path.abspath(f"{self._path_to_scenes}/{file_name}.py"))
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
 
     def get_message_scene_callback(self, scene_name: str) -> Callable:
         callback = self._message_handlers.get(scene_name)
