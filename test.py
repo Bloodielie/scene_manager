@@ -4,9 +4,17 @@ def get_module_dir(user_object):
 
 class SceneConfigMetaclass(type):
     def __init__(cls, class_name, parents, attributes):
-        if parents:
-            new_config = getattr(cls, "Config")
-            old_config = getattr(parents[0], "Config")
+        if not parents:
+            super().__init__(class_name, parents, attributes)
+            return
+
+        new_config = attributes.get("Config")
+        if new_config is None:
+            super().__init__(class_name, parents, attributes)
+            return
+
+        for parent in parents:
+            old_config = getattr(parent, "Config")
             for user_attr in get_module_dir(old_config):
                 try:
                     getattr(new_config, user_attr)
@@ -37,10 +45,12 @@ class A(MessageScene):
 
 
 class B(A):
-    pass
+    class Config:
+        a = 1231
 
+from time import time
 
-a = B()
-a.Config.content_types = '123'
-print(a.Config.agagagag)
-print(a.generate_config_dict())
+time1 = time()
+for i in range(10000000):
+    B()
+print(time()-time1)

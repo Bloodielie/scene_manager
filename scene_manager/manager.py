@@ -1,8 +1,11 @@
-from aiogram import Dispatcher, types
-from scene_manager.loader import Loader
 from typing import Optional, Any
-from scene_manager.storages import base, redis
+
+from aiogram import Dispatcher, types
+from aiogram.types.message import ContentType
+
+from scene_manager.loader.loader import Loader
 from scene_manager.settings.storage import StorageSettings
+from scene_manager.storages import base, redis
 
 
 class Manager:
@@ -39,8 +42,7 @@ class Manager:
         return user_scene
 
     def register_handlers(self) -> None:
-        # todo: получать все контент тайпы
-        self.register_message_handlers()
+        self.register_message_handlers(content_types=ContentType.all())
 
     def register_message_handlers(self, **kwargs) -> None:
         self.dispatcher.register_message_handler(self._message_handler, **kwargs)

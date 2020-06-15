@@ -1,13 +1,19 @@
-import os
-import glob
-import importlib.util
 from inspect import ismodule, ismethod
+from typing import Optional, Callable, Set
 
 from aiogram import Dispatcher
 from loguru import logger
-from scene_manager.base_scenes import MessageScene, QueryScene, BaseScene
-from typing import Set, Optional, Callable
+
+from scene_manager.loader import utils
+from scene_manager.loader.utils import get_class_attr
+from scene_manager.scenes.base import BaseScene
+from scene_manager.scenes.samples import MessageScene, QueryScene
 from scene_manager.storages.base import BaseStorage
+
+
+def get_user_attr(user_class) -> Set[str]:
+    all_dir = get_class_attr(user_class)
+    return all_dir - get_class_attr(BaseScene)
 
 
 class SceneNotFoundError(Exception):
@@ -28,7 +34,6 @@ class Loader:
             MessageScene: self._message_handlers,
             QueryScene: self._query_handlers
         }
-        self._default_attr = self.get_class_attr(BaseScene)
         self.class_distribution()
 
     def class_distribution(self) -> None:
@@ -38,7 +43,7 @@ class Loader:
             self._recording_scenes_from_types(user_class)
 
     def _recording_scenes_from_types(self, user_class):
-        user_methods = self.get_user_attr(user_class)
+        user_methods = get_user_attr(user_class)
         for scenes_type in self._scenes_types.keys():
             if not isinstance(user_class, scenes_type):
                 continue
@@ -52,28 +57,15 @@ class Loader:
 
     def _loading_classes(self) -> set:
         classes = set()
-        files_path = self.recursive_load_files(self._path_to_scenes)
+        files_path = utils.recursive_load_files(self._path_to_scenes)
         for file_path in files_path:
-            module = self.load_module(file_path)
+            module = utils.load_module(file_path)
             classes.update(self.get_classes(module))
         return classes
 
-    @staticmethod
-    def recursive_load_files(path: str) -> set:
-        # todo: вынести в другой класс
-        result = set()
-
-        for walk in os.walk(path):
-            for file_name in glob.glob(os.path.join(walk[0], '*.py')):
-                if file_name.endswith('__init__.py'):
-                    continue
-                result.add(file_name)
-        return result
-
     def get_classes(self, module) -> set:
-        # todo: вынести в другой класс
         user_classes = set()
-        module_dirs = self.get_class_attr(module)
+        module_dirs = utils.get_class_attr(module)
         for module_dir in module_dirs:
             user_class = getattr(module, module_dir)
             try:
@@ -82,25 +74,6 @@ class Loader:
             except Exception as e:
                 logger.exception(f"Error in module check: {e}")
         return user_classes
-
-    @staticmethod
-    def load_module(file_path: str):
-        # todo: вынести в другой класс
-        file_name = file_path.split('\\')[-1:][0]
-        spec = importlib.util.spec_from_file_location(file_name, os.path.abspath(file_path))
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
-
-    @staticmethod
-    def get_class_attr(class_) -> Set[str]:
-        # todo: вынести в другой класс
-        return {dir_ for dir_ in dir(class_) if not dir_.endswith('__')}
-
-    def get_user_attr(self, user_class) -> Set[str]:
-        # todo: вынести в другой класс
-        all_dir = self.get_class_attr(user_class)
-        return all_dir - self._default_attr
 
     def get_message_scene_callback(self, scene_name: str) -> Callable:
         callback = self._message_handlers.get(scene_name)
