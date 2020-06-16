@@ -8,7 +8,6 @@ from scene_manager.loader import utils
 from scene_manager.loader.models import HandlersStorage, SceneModel
 from scene_manager.loader.utils import get_class_attr
 from scene_manager.scenes.base import BaseScene
-from scene_manager.scenes.samples import MessageScene, QueryScene
 from scene_manager.storages.base import BaseStorage
 
 
@@ -24,12 +23,6 @@ class Loader:
         self._storage = storage
         self._path_to_scenes = path_to_scenes or "./scenes"
         self._handlers_storage = HandlersStorage()
-        self._message_handlers = {}
-        self._query_handlers = {}
-        self._scenes_types = {
-            MessageScene: self._message_handlers,
-            QueryScene: self._query_handlers,
-        }
         self._class_distribution()
 
     def _class_distribution(self) -> None:
@@ -65,7 +58,7 @@ class Loader:
         for module_dir in module_dirs:
             user_class = getattr(module, module_dir)
             try:
-                if not ismodule(user_class) and user_class not in self._scenes_types.keys():
+                if not ismodule(user_class) and user_class not in self._handlers_storage.scenes_types.keys():
                     user_classes.add(user_class)
             except Exception as e:
                 logger.exception(f"Error in module check: {e}")
