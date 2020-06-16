@@ -5,8 +5,10 @@ from aiogram import types
 from aiogram.types import ContentType
 
 
-def context_type_filter(context_types: List[Union[ContentType, str]],
-                        otherwise_handler: Optional[Callable] = None) -> Callable:
+def context_type_filter(
+    context_types: List[Union[ContentType, str]],
+    otherwise_handler: Optional[Callable] = None,
+) -> Callable:
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(self, message: types.Message) -> Callable:

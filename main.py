@@ -15,7 +15,7 @@ dp = Dispatcher(bot)
 manager = Manager(dispatcher=dp)
 
 
-# @dp.message_handler(content_types=['video', 'text', 'document'])
+# @dp.message_handler(content_types=ContentType.ANY)
 # async def agagaga(message: types.Message):
 #     """
 #     This handler will be called when user sends `/start` or `/help` command

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from aiogram import Dispatcher
 from aiogram.types.base import TelegramObject
 
@@ -27,7 +29,7 @@ class SceneConfigMetaclass(type):
         super().__init__(class_name, parents, attributes)
 
 
-class BaseScene:
+class BaseScene(metaclass=SceneConfigMetaclass):
     def __init__(self, dispatcher: Dispatcher, storage: BaseStorage) -> None:
         self.dispatcher = dispatcher
         self.storage = storage
@@ -38,3 +40,12 @@ class BaseScene:
 
     class Config:
         pass
+
+    @property
+    def config(self) -> Optional[dict]:
+        dict_ = {}
+        all_dir = get_class_attr(getattr(self, "Config"))
+        user_attrs = all_dir - get_class_attr(BaseScene)
+        for user_attr in user_attrs:
+            dict_[user_attr] = getattr(self.Config, user_attr)
+        return dict_

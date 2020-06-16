@@ -1,10 +1,11 @@
 from inspect import ismodule, ismethod
-from typing import Optional, Callable, Set
+from typing import Optional, Set
 
 from aiogram import Dispatcher
 from loguru import logger
 
 from scene_manager.loader import utils
+from scene_manager.loader.models import HandlersStorage, SceneModel
 from scene_manager.loader.utils import get_class_attr
 from scene_manager.scenes.base import BaseScene
 from scene_manager.scenes.samples import MessageScene, QueryScene
@@ -16,43 +17,38 @@ def get_user_attr(user_class) -> Set[str]:
     return all_dir - get_class_attr(BaseScene)
 
 
-class SceneNotFoundError(Exception):
-    pass
-
-
 class Loader:
-    def __init__(self,
-                 dispatcher: Dispatcher,
-                 storage: BaseStorage,
-                 path_to_scenes: Optional[str] = None) -> None:
+    def __init__(self, dispatcher: Dispatcher, storage: BaseStorage, path_to_scenes: Optional[str] = None) -> None:
+        # todo: добавить логирование
         self._dispatcher = dispatcher
         self._storage = storage
-        self._path_to_scenes = path_to_scenes or './scenes'
+        self._path_to_scenes = path_to_scenes or "./scenes"
+        self._handlers_storage = HandlersStorage()
         self._message_handlers = {}
         self._query_handlers = {}
         self._scenes_types = {
             MessageScene: self._message_handlers,
-            QueryScene: self._query_handlers
+            QueryScene: self._query_handlers,
         }
-        self.class_distribution()
+        self._class_distribution()
 
-    def class_distribution(self) -> None:
+    def _class_distribution(self) -> None:
         user_classes = self._loading_classes()
         for user_class in user_classes:
             user_class = user_class(self._dispatcher, self._storage)
             self._recording_scenes_from_types(user_class)
 
-    def _recording_scenes_from_types(self, user_class):
+    def _recording_scenes_from_types(self, user_class) -> None:
         user_methods = get_user_attr(user_class)
-        for scenes_type in self._scenes_types.keys():
+        for scenes_type in self._handlers_storage.scenes_types.keys():
             if not isinstance(user_class, scenes_type):
                 continue
-            handler_dictionary = self._scenes_types.get(scenes_type)
             for user_method in user_methods:
                 user_attr = getattr(user_class, user_method)
                 if not ismethod(user_attr):
                     continue
-                handler_dictionary[user_method] = user_attr
+                scene_model = SceneModel(handler=user_attr, link_to_object=user_class, config=user_class.config)
+                self._handlers_storage.set_scene(scenes_type, user_method, scene_model)
             break
 
     def _loading_classes(self) -> set:
@@ -60,10 +56,10 @@ class Loader:
         files_path = utils.recursive_load_files(self._path_to_scenes)
         for file_path in files_path:
             module = utils.load_module(file_path)
-            classes.update(self.get_classes(module))
+            classes.update(self._get_classes(module))
         return classes
 
-    def get_classes(self, module) -> set:
+    def _get_classes(self, module) -> set:
         user_classes = set()
         module_dirs = utils.get_class_attr(module)
         for module_dir in module_dirs:
@@ -75,8 +71,5 @@ class Loader:
                 logger.exception(f"Error in module check: {e}")
         return user_classes
 
-    def get_message_scene_callback(self, scene_name: str) -> Callable:
-        callback = self._message_handlers.get(scene_name)
-        if not callback:
-            raise SceneNotFoundError("There is no such scene")
-        return callback
+    def get_message_scene_callback(self, scene_name: str) -> SceneModel:
+        return self._handlers_storage.get_message_scene(scene_name)

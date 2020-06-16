@@ -33,6 +33,7 @@ class RedisStorage(BaseStorage):
         self._password = storage_settings.storage_dsn.password
         self._ssl = storage_settings.storage_ssl
         self._pool_size = storage_settings.pool_size
+        self._timeout = storage_settings.storage_timeout
         self._loop = loop or asyncio.get_event_loop()
 
         self._dumper = dumper
@@ -41,7 +42,9 @@ class RedisStorage(BaseStorage):
         self._redis: typing.Optional["aioredis.Redis"] = None
         self._connection_lock = asyncio.Lock(loop=self._loop)
 
-    async def get(self, key: str, default: typing.Optional[typing.Any] = None) -> typing.Union[None, typing.Any]:
+    async def get(
+        self, key: str, default: typing.Optional[typing.Any] = None
+    ) -> typing.Union[None, typing.Any]:
         conn = await self.redis()
 
         key_ = await conn.get(key)
@@ -74,6 +77,7 @@ class RedisStorage(BaseStorage):
                     ssl=self._ssl,
                     loop=self._loop,
                     maxsize=self._pool_size,
+                    timeout=self._timeout,
                     **self._kwargs,
                 )
 
