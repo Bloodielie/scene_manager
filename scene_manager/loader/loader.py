@@ -2,13 +2,13 @@ from inspect import ismodule, ismethod
 from typing import Optional, Set
 
 from aiogram import Dispatcher
-from loguru import logger
 
 from scene_manager.loader import utils
 from scene_manager.loader.models import HandlersStorage, SceneModel
 from scene_manager.loader.utils import get_class_attr
 from scene_manager.scenes.base import BaseScene
 from scene_manager.storages.base import BaseStorage
+from loguru import logger
 
 
 def get_user_attr(user_class) -> Set[str]:
@@ -18,14 +18,16 @@ def get_user_attr(user_class) -> Set[str]:
 
 class Loader:
     def __init__(self, dispatcher: Dispatcher, storage: BaseStorage, path_to_scenes: Optional[str] = None) -> None:
-        # todo: добавить логирование
         self._dispatcher = dispatcher
         self._storage = storage
         self._path_to_scenes = path_to_scenes or "./scenes"
         self._handlers_storage = HandlersStorage()
+
+    def load_scenes(self) -> None:
         self._class_distribution()
 
     def _class_distribution(self) -> None:
+        logger.debug("Start load scenes")
         user_classes = self._loading_classes()
         for user_class in user_classes:
             user_class = user_class(self._dispatcher, self._storage)
@@ -42,6 +44,7 @@ class Loader:
                     continue
                 scene_model = SceneModel(handler=user_attr, link_to_object=user_class, config=user_class.config)
                 self._handlers_storage.set_scene(scenes_type, user_method, scene_model)
+                logger.debug(f"Add scene {scenes_type}, {user_method}, {scene_model}")
             break
 
     def _loading_classes(self) -> set:

@@ -2,11 +2,14 @@ from glob import glob
 import importlib.util
 import os
 from typing import Set
+from loguru import logger
 
 
 def load_module(file_path: str):
     file_name = file_path.split("\\")[-1:][0]
-    spec = importlib.util.spec_from_file_location(file_name, os.path.abspath(file_path))
+    file_path = os.path.abspath(file_path)
+    logger.debug(f"Load module: {file_name}, {file_path}")
+    spec = importlib.util.spec_from_file_location(file_name, file_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -24,4 +27,5 @@ def recursive_load_files(path: str) -> set:
             if file_name.endswith("__init__.py"):
                 continue
             result.add(file_name)
+    logger.debug(f"Found Files: {result}")
     return result

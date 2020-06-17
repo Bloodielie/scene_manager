@@ -7,6 +7,7 @@ from scene_manager.loader.loader import Loader
 from scene_manager.settings.storage import StorageSettings
 from scene_manager.storages import base, redis
 from scene_manager.utils import content_type_checker
+from loguru import logger
 
 
 class Manager:
@@ -30,6 +31,7 @@ class Manager:
         self._storage = storage
 
         self.loader = Loader(dispatcher, self._storage, path_to_scenes)
+        self.loader.load_scenes()
 
     async def _message_handler(self, message: types.Message) -> None:
         user_scene = await self.get_state_name(message)
@@ -50,7 +52,9 @@ class Manager:
         return user_scene
 
     def register_handlers(self) -> None:
+        logger.info("Registration handlers")
         self.register_message_handlers(content_types=ContentType.ANY)
 
     def register_message_handlers(self, **kwargs) -> None:
+        logger.debug("Registration message handler")
         self.dispatcher.register_message_handler(self._message_handler, **kwargs)
