@@ -10,5 +10,5 @@ class MessageScene(BaseScene):
         content_types: Optional[Union[ContentType, str]] = [ContentType.ANY]
 
 
-class QueryScene(BaseScene):
+class CallbackQueryScene(BaseScene):
     pass

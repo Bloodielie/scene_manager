@@ -67,5 +67,8 @@ class Loader:
                 logger.exception(f"Error in module check: {e}")
         return user_classes
 
-    def get_message_scene_callback(self, scene_name: str) -> SceneModel:
+    def get_message_scene_model(self, scene_name: str) -> SceneModel:
         return self._handlers_storage.get_message_scene(scene_name)
+
+    def get_callback_query_scene_model(self, scene_name: str) -> SceneModel:
+        return self._handlers_storage.get_callback_query_scene(scene_name)

@@ -1,7 +1,7 @@
 from typing import Callable, Optional
 from pydantic import BaseModel
 
-from scene_manager.scenes.samples import MessageScene, QueryScene
+from scene_manager.scenes.samples import MessageScene, CallbackQueryScene
 from scene_manager.scenes.base import BaseScene
 
 
@@ -21,14 +21,21 @@ class SceneModel(BaseModel):
 class HandlersStorage:
     def __init__(self) -> None:
         self._message_handlers = {}
-        self._query_handlers = {}
+        self._callback_query_handler = {}
         self.scenes_types = {
             MessageScene: self._message_handlers,
-            QueryScene: self._query_handlers,
+            CallbackQueryScene: self._callback_query_handler,
         }
 
     def get_message_scene(self, scene_name: str) -> SceneModel:
-        scene_model = self._message_handlers.get(scene_name)
+        return self._scene_getter(scene_name, self._message_handlers)
+
+    def get_callback_query_scene(self, scene_name: str) -> SceneModel:
+        return self._scene_getter(scene_name, self._callback_query_handler)
+
+    @staticmethod
+    def _scene_getter(scene_name: str, handler_dict: dict) -> SceneModel:
+        scene_model = handler_dict.get(scene_name)
         if not scene_model:
             raise SceneNotFoundError("There is no such scene")
         return scene_model

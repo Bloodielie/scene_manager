@@ -34,8 +34,8 @@ class Manager:
         self.loader.load_scenes()
 
     async def _message_handler(self, message: types.Message) -> None:
-        user_scene = await self.get_state_name(message)
-        scene_model = self.loader.get_message_scene_callback(user_scene)
+        user_scene_name = await self._get_scene_name(message)
+        scene_model = self.loader.get_message_scene_model(user_scene_name)
         if content_type_checker(message, scene_model.config.get("content_types")):
             await scene_model.handler(message)
         else:
@@ -43,7 +43,12 @@ class Manager:
             if otherwise_handler is not None:
                 otherwise_handler(message)
 
-    async def get_state_name(self, ctx) -> Any:
+    async def _callback_query_handler(self, query: types.CallbackQuery) -> None:
+        user_scene_name = await self._get_scene_name(query)
+        scene_model = self.loader.get_callback_query_scene_model(user_scene_name)
+        await scene_model.handler(query)
+
+    async def _get_scene_name(self, ctx) -> Any:
         user_id = ctx.from_user.id
         user_scene = await self._storage.get(user_id)
         if user_scene is None:
@@ -54,7 +59,12 @@ class Manager:
     def register_handlers(self) -> None:
         logger.info("Registration handlers")
         self.register_message_handlers(content_types=ContentType.ANY)
+        self.register_callback_query_handlers()
 
     def register_message_handlers(self, **kwargs) -> None:
-        logger.debug("Registration message handler")
+        logger.debug("Registration message handlers")
         self.dispatcher.register_message_handler(self._message_handler, **kwargs)
+
+    def register_callback_query_handlers(self, **kwargs) -> None:
+        logger.debug("Registration callback_query handlers")
+        self.dispatcher.register_callback_query_handler(self._callback_query_handler, **kwargs)
