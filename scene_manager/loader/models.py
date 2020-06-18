@@ -1,12 +1,9 @@
 from typing import Callable, Optional
 from pydantic import BaseModel
 
+from scene_manager.exceptions import SceneNotFoundError
 from scene_manager.scenes.samples import MessageScene, CallbackQueryScene
 from scene_manager.scenes.base import BaseScene
-
-
-class SceneNotFoundError(Exception):
-    pass
 
 
 class SceneModel(BaseModel):

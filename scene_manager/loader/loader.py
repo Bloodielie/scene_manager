@@ -3,12 +3,15 @@ from typing import Optional, Set
 
 from aiogram import Dispatcher
 
+from scene_manager import StorageSettings
 from scene_manager.loader import utils
 from scene_manager.loader.models import HandlersStorage, SceneModel
 from scene_manager.loader.utils import get_class_attr
 from scene_manager.scenes.base import BaseScene
+from scene_manager.storages import redis
 from scene_manager.storages.base import BaseStorage
 from loguru import logger
+from aiogram.utils.mixins import ContextInstanceMixin
 
 
 def get_user_attr(user_class) -> Set[str]:
@@ -16,21 +19,25 @@ def get_user_attr(user_class) -> Set[str]:
     return all_dir - get_class_attr(BaseScene)
 
 
-class Loader:
-    def __init__(self, dispatcher: Dispatcher, storage: BaseStorage, path_to_scenes: Optional[str] = None) -> None:
+class Loader(ContextInstanceMixin):
+    def __init__(self, dispatcher: Dispatcher, *, storage: Optional[BaseStorage] = None, path_to_scenes: Optional[str] = None) -> None:
         self._dispatcher = dispatcher
-        self._storage = storage
+        self.storage = storage or redis.RedisStorage(StorageSettings())
         self._path_to_scenes = path_to_scenes or "./scenes"
         self._handlers_storage = HandlersStorage()
+        self.is_scenes_loaded = False
+        # todo: сделать в сторадже сцены set чтобы можно было делать несколько одинаковых сцен
+        self.set_current(self)
 
     def load_scenes(self) -> None:
+        self.is_scenes_loaded = True
         self._class_distribution()
 
     def _class_distribution(self) -> None:
         logger.debug("Start load scenes")
         user_classes = self._loading_classes()
         for user_class in user_classes:
-            user_class = user_class(self._dispatcher, self._storage)
+            user_class = user_class(self._dispatcher, self.storage)
             self._recording_scenes_from_types(user_class)
 
     def _recording_scenes_from_types(self, user_class) -> None:
