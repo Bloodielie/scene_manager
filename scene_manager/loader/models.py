@@ -13,7 +13,7 @@ class SceneModel(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
-        
+
     def __hash__(self):
         return hash((self.scene_name, self.handler, self.link_to_object))
 
@@ -22,7 +22,7 @@ class HandlersStorage:
     def __init__(self) -> None:
         self._message_handlers: Set[SceneModel] = set()
         self._callback_query_handler: Set[SceneModel] = set()
-        self.scenes_types = {
+        self.scenes_storages = {
             MessageScene: self._message_handlers,
             CallbackQueryScene: self._callback_query_handler,
         }
@@ -41,7 +41,7 @@ class HandlersStorage:
             yield handler
 
     def set_scene(self, scene_class: BaseScene, scene_model: SceneModel) -> None:
-        handlers_set = self.scenes_types.get(scene_class)
+        handlers_set = self.scenes_storages.get(scene_class)
         if handlers_set is None:
             raise TypeError("scene class not found")
         handlers_set.add(scene_model)

@@ -1,8 +1,14 @@
+from functools import lru_cache
 from glob import glob
 import importlib.util
 import os
 from typing import Set
 from loguru import logger
+
+
+@lru_cache
+def get_class_attr(class_) -> Set[str]:
+    return {dir_ for dir_ in dir(class_) if not dir_.endswith("__")}
 
 
 def load_module(file_path: str):
@@ -13,10 +19,6 @@ def load_module(file_path: str):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
-
-
-def get_class_attr(class_) -> Set[str]:
-    return {dir_ for dir_ in dir(class_) if not dir_.endswith("__")}
 
 
 def recursive_load_files(path: str) -> list:

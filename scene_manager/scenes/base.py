@@ -41,11 +41,11 @@ class BaseScene(metaclass=SceneConfigMetaclass):
 
     def __getattribute__(self, name: str):
         attr = super().__getattribute__(name)
-        if name == 'bot' and attr is None:
+        if name == "bot" and attr is None:
             bot = Bot.get_current()
             super().__setattr__(name, bot)
             return bot
-        if name == 'dispatcher' and attr is None:
+        if name == "dispatcher" and attr is None:
             dispatcher = Dispatcher.get_current()
             super().__setattr__(name, dispatcher)
             return dispatcher

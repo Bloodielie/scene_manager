@@ -15,14 +15,14 @@ class ScenesMiddleware(BaseMiddleware):
             self._loader = Loader()
         if not self._loader.is_scenes_loaded:
             self._loader.load_scenes()
-        self._storage = self._loader.storage
+        self._storage = self._loader.data_storage
         super().__init__()
 
     async def on_post_process_message(self, message: types.Message, results: tuple, data: dict):
         if data:
             return
         user_scene_name = await self._get_scene_name(message)
-        for scene_model in self._loader.get_message_scene_model(user_scene_name):
+        for scene_model in self._loader.handlers_storage.get_message_scene(user_scene_name):
             if content_type_checker(message, scene_model.config.get("content_types")):
                 await scene_model.handler(message)
             else:
@@ -36,7 +36,7 @@ class ScenesMiddleware(BaseMiddleware):
         if data:
             return
         user_scene_name = await self._get_scene_name(callback_query)
-        for scene_model in self._loader.get_callback_query_scene_model(user_scene_name):
+        for scene_model in self._loader.handlers_storage.get_callback_query_scene(user_scene_name):
             await scene_model.handler(callback_query)
 
     async def _get_scene_name(self, ctx) -> Any:
