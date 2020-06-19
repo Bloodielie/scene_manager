@@ -4,9 +4,7 @@ from abc import ABC, abstractmethod
 
 class BaseStorage(ABC):
     @abstractmethod
-    async def get(
-        self, key: str, default: typing.Optional[typing.Any] = None
-    ) -> typing.Union[None, typing.Any]:
+    async def get(self, key: str, default: typing.Optional[typing.Any] = None) -> typing.Union[None, typing.Any]:
         raise NotImplementedError
 
     @abstractmethod

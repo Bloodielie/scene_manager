@@ -1,7 +1,7 @@
 from aiogram import types
 
 from scene_manager import MessageScene, CallbackQueryScene
-from scene_manager import filters
+from scene_manager.tools import filters
 
 
 class Test(MessageScene):

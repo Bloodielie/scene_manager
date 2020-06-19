@@ -4,9 +4,7 @@ from aiogram import types
 from aiogram.types import ContentType
 
 
-def content_type_checker(
-    message: types.Message, context_types: List[Union[ContentType, str, None]]
-) -> bool:
+def content_type_checker(message: types.Message, context_types: List[Union[ContentType, str, None]]) -> bool:
     content_type = message.content_type
     if context_types is None:
         return False

@@ -42,9 +42,7 @@ class RedisStorage(BaseStorage):
         self._redis: typing.Optional["aioredis.Redis"] = None
         self._connection_lock = asyncio.Lock(loop=self._loop)
 
-    async def get(
-        self, key: str, default: typing.Optional[typing.Any] = None
-    ) -> typing.Union[None, typing.Any]:
+    async def get(self, key: str, default: typing.Optional[typing.Any] = None) -> typing.Union[None, typing.Any]:
         conn = await self.redis()
 
         key_ = await conn.get(key)

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from aiogram import Dispatcher
+from aiogram import Dispatcher, Bot
 from aiogram.types.base import TelegramObject
 
 from scene_manager.loader.utils import get_class_attr
@@ -30,10 +30,26 @@ class SceneConfigMetaclass(type):
 
 
 class BaseScene(metaclass=SceneConfigMetaclass):
-    def __init__(self, dispatcher: Dispatcher, storage: BaseStorage) -> None:
-        self.dispatcher = dispatcher
+    def __init__(self, storage: BaseStorage, dispatcher: Optional[Dispatcher] = None) -> None:
+        self.dispatcher = dispatcher or Dispatcher.get_current()
         self.storage = storage
-        self.bot = self.dispatcher.bot
+        if self.dispatcher is None:
+            bot = None
+        else:
+            bot = self.dispatcher.bot
+        self.bot = bot
+
+    def __getattribute__(self, name: str):
+        attr = super().__getattribute__(name)
+        if name == 'bot' and attr is None:
+            bot = Bot.get_current()
+            super().__setattr__(name, bot)
+            return bot
+        if name == 'dispatcher' and attr is None:
+            dispatcher = Dispatcher.get_current()
+            super().__setattr__(name, dispatcher)
+            return dispatcher
+        return attr
 
     async def set_scene(self, ctx: TelegramObject, scene_name: str) -> None:
         await self.storage.put(ctx.from_user.id, scene_name)

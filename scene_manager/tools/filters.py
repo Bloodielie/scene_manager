@@ -8,8 +8,7 @@ from scene_manager.utils import content_type_checker
 
 
 def context_types_filter(
-    context_types: List[Union[ContentType, str]],
-    otherwise_handler: Optional[Callable] = None,
+    context_types: List[Union[ContentType, str]], otherwise_handler: Optional[Callable] = None
 ) -> Callable:
     def decorator(func: Callable):
         @wraps(func)

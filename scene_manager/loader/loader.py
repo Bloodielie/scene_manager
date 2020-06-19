@@ -1,5 +1,5 @@
 from inspect import ismodule, ismethod
-from typing import Optional, Set
+from typing import Optional, Set, Generator, Union, List
 
 from aiogram import Dispatcher
 
@@ -20,13 +20,24 @@ def get_user_attr(user_class) -> Set[str]:
 
 
 class Loader(ContextInstanceMixin):
-    def __init__(self, dispatcher: Dispatcher, *, storage: Optional[BaseStorage] = None, path_to_scenes: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        *,
+        dispatcher: Optional[Dispatcher] = None,
+        storage: Optional[BaseStorage] = None,
+        path_to_scenes: Optional[Union[str, List[str]]] = None,
+    ) -> None:
         self._dispatcher = dispatcher
         self.storage = storage or redis.RedisStorage(StorageSettings())
-        self._path_to_scenes = path_to_scenes or "./scenes"
         self._handlers_storage = HandlersStorage()
         self.is_scenes_loaded = False
-        # todo: сделать в сторадже сцены set чтобы можно было делать несколько одинаковых сцен
+
+        if path_to_scenes is None:
+            path_to_scenes = ["./scenes"]
+        elif isinstance(path_to_scenes, str):
+            path_to_scenes = [path_to_scenes]
+        self._path_to_scenes = path_to_scenes
+
         self.set_current(self)
 
     def load_scenes(self) -> None:
@@ -37,7 +48,7 @@ class Loader(ContextInstanceMixin):
         logger.debug("Start load scenes")
         user_classes = self._loading_classes()
         for user_class in user_classes:
-            user_class = user_class(self._dispatcher, self.storage)
+            user_class = user_class(self.storage, dispatcher=self._dispatcher)
             self._recording_scenes_from_types(user_class)
 
     def _recording_scenes_from_types(self, user_class) -> None:
@@ -49,14 +60,17 @@ class Loader(ContextInstanceMixin):
                 user_attr = getattr(user_class, user_method)
                 if not ismethod(user_attr):
                     continue
-                scene_model = SceneModel(handler=user_attr, link_to_object=user_class, config=user_class.config)
-                self._handlers_storage.set_scene(scenes_type, user_method, scene_model)
+                scene_model = SceneModel(scene_name=user_method, handler=user_attr, link_to_object=user_class, config=user_class.config)
+                self._handlers_storage.set_scene(scenes_type, scene_model)
                 logger.debug(f"Add scene {scenes_type}, {user_method}, {scene_model}")
             break
 
     def _loading_classes(self) -> set:
         classes = set()
-        files_path = utils.recursive_load_files(self._path_to_scenes)
+        files_path = list()
+        for directory in self._path_to_scenes:
+            files_path.extend(utils.recursive_load_files(directory))
+        print(files_path)
         for file_path in files_path:
             module = utils.load_module(file_path)
             classes.update(self._get_classes(module))
@@ -74,8 +88,8 @@ class Loader(ContextInstanceMixin):
                 logger.exception(f"Error in module check: {e}")
         return user_classes
 
-    def get_message_scene_model(self, scene_name: str) -> SceneModel:
+    def get_message_scene_model(self, scene_name: str) -> Generator[SceneModel, None, None]:
         return self._handlers_storage.get_message_scene(scene_name)
 
-    def get_callback_query_scene_model(self, scene_name: str) -> SceneModel:
+    def get_callback_query_scene_model(self, scene_name: str) -> Generator[SceneModel, None, None]:
         return self._handlers_storage.get_callback_query_scene(scene_name)
