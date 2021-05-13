@@ -4,7 +4,7 @@ import setuptools
 requirements = [
     "aiogram==2.9.*",
     "aioredis==1.3.1",
-    "pydantic==1.5.1",
+    "pydantic==1.6.2",
     "python-dotenv==0.13.0",
     "loguru==0.5.1",
 ]
